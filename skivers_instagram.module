@@ -1,0 +1,158 @@
+<?php
+
+/*
+  @author surf
+ * */
+
+define('SKIVERS_INSTAGRAM_ADMIN', 'admin/config/skivers/skivers_instagram');
+
+function skivers_instagram_menu()
+{
+
+    $items[SKIVERS_INSTAGRAM_ADMIN] = array(
+        'title' => 'Instagram',
+        'description' => 'Instagram',
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('skivers_instagram_admin'),
+        'access arguments' => array('administer skivers_instagram_admin module'),
+        'type' => MENU_NORMAL_ITEM,
+    );
+    return $items;
+}
+
+function skivers_instagram_init()
+{
+//    drupal_add_js("skivers_instagram_code ='" . variable_get('skivers_instagram_code', 'Error Code') . "';", array('type' => 'inline', 'scope' => 'header'));
+//    drupal_add_js(drupal_get_path('module', 'skivers_instagram') . '/js/skivers_instagram.js', array('scope' => 'footer'));
+//    drupal_add_css(drupal_get_path('module', 'skivers_instagram') . '/css/skivers_instagram.css');
+}
+
+function skivers_instagram_admin()
+{
+    $form = array();
+
+    $form['skivers_instagram_title'] = array(
+    );
+    $form['skivers_instagram_code'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Client ID'),
+        '#default_value' => variable_get('skivers_instagram_code', 'Enter Your Code'),
+        '#size' => 60,
+        '#maxlength' => 125,
+        '#description' => t(""),
+        '#required' => TRUE,
+    );
+    $form['skivers_instagram_secret'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Secret'),
+        '#default_value' => variable_get('skivers_instagram_secret', 'Enter Your Code'),
+        '#size' => 60,
+        '#maxlength' => 125,
+        '#description' => t(""),
+        '#required' => TRUE,
+    );
+    $form['skivers_instagram_user_id'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Instagram Profile id'),
+        '#default_value' => variable_get('skivers_instagram_user_id', 'Enter Your Code'),
+        '#size' => 60,
+        '#maxlength' => 125,
+        '#description' => t(""),
+        '#required' => TRUE,
+    );
+
+
+    $form['skivers_instagram_markup'] = array(
+        '#markup' => '<b>
+                        skivers_instagram_tag([enter a tag])</b> - use this to get an image with the tags listed
+                      <br/>
+                       <b>skivers_instagram_id() </b>- use this to get profile images'
+    );
+
+
+
+    return system_settings_form($form);
+}
+
+function skivers_instagram_tag($tag)
+{
+
+    $client_id = variable_get('skivers_instagram_code', '');
+    $secret = variable_get('skivers_instagram_secret', '');
+    if (!empty($client_id) && !empty($secret))
+    {
+        try
+        {
+            $result = json_decode(skivers_instagram_curl_download('https://api.instagram.com/v1/tags/' . $tag . '/media/recent?client_id=' . $client_id));
+            // display images
+            $data = $result->data;
+            return $data;
+        } catch (Exception $e)
+        {
+            echo 'ERROR: ' . $e->getMessage() . print_r($client_id);
+            exit;
+        }
+    }
+}
+
+function skivers_instagram_id()
+{
+
+    $client_id = variable_get('skivers_instagram_code', '');
+    $secret = variable_get('skivers_instagram_secret', '');
+    $id = variable_get('skivers_instagram_user_id', '');
+    if (!empty($client_id) && !empty($secret) && !empty($id))
+    {
+        try
+        {
+            $result = json_decode(skivers_instagram_curl_download('https://api.instagram.com/v1/users/' . $id . '/media/recent?client_id=' . $client_id));
+            // display images
+            $data = $result->data;
+            return $data;
+        } catch (Exception $e)
+        {
+            echo 'ERROR: ' . $e->getMessage() . print_r($client_id);
+            exit;
+        }
+    }
+}
+
+function skivers_instagram_curl_download($Url)
+{
+
+    // is cURL installed yet?
+    if (!function_exists('curl_init'))
+    {
+        die('Sorry cURL is not installed!');
+    }
+
+    // OK cool - then let's create a new cURL resource handle
+    $ch = curl_init();
+
+    // Now set some options (most are optional)
+    // Set URL to download
+    curl_setopt($ch, CURLOPT_URL, $Url);
+
+    // Set a referer
+    curl_setopt($ch, CURLOPT_REFERER, $GLOBALS['base_url']);
+
+    // User agent
+    curl_setopt($ch, CURLOPT_USERAGENT, "MozillaXYZ/1.0");
+
+    // Include header in result? (0 = yes, 1 = no)
+    curl_setopt($ch, CURLOPT_HEADER, 0);
+
+    // Should cURL return or print out the data? (true = return, false = print)
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+    // Timeout in seconds
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+
+    // Download the given URL, and return output
+    $output = curl_exec($ch);
+
+    // Close the cURL resource, and free system resources
+    curl_close($ch);
+
+    return $output;
+}
